@@ -2,8 +2,11 @@ package com.example.config;
 
 import com.auth0.jwt.JWT;
 import com.example.entity.RestBean;
+import com.example.entity.dto.Account;
 import com.example.entity.vo.response.AuthorizeVO;
 import com.example.filter.JwtAuthorizeFilter;
+import com.example.mapper.AccountMapper;
+import com.example.service.impl.AccountServiceImpl;
 import com.example.utils.JwtUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.ServletException;
@@ -25,6 +28,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 
 import java.io.IOException;
+import java.io.PrintWriter;
 
 @Configuration
 public class SecurityConfiguration {
@@ -34,6 +38,9 @@ public class SecurityConfiguration {
 
     @Resource
     JwtAuthorizeFilter jwtAuthorizeFilter;
+
+    @Resource
+    AccountServiceImpl accountService;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -66,11 +73,13 @@ public class SecurityConfiguration {
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
         User user = (User) authentication.getPrincipal(); // 获取用户信息
-        String token = jwtUtils.createJwt(user, 1, "小明");
+        Account account = accountService.findAccountByNameOrEmail(user.getUsername());
+        String token = jwtUtils.createJwt(user, account.getId(), account.getUsername());
         AuthorizeVO vo = new AuthorizeVO();
         vo.setExpire(JWT.decode(token).getExpiresAt());
+        vo.setRole(account.getRole());
         vo.setToken(token);
-        vo.setUsername("小明");
+        vo.setUsername(account.getUsername());
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write(RestBean.success(vo).asJsonString());
     }
@@ -99,7 +108,14 @@ public class SecurityConfiguration {
     public void onLogoutSuccess(HttpServletRequest request,
                                 HttpServletResponse response,
                                 Authentication authentication) throws IOException, ServletException {
-
+        response.setContentType("application/json;charset=UTF-8");
+        PrintWriter writer = response.getWriter();
+        String authorization = request.getHeader("Authorization");
+        if(jwtUtils.invalidateJwt(authorization)) {
+            writer.write(RestBean.success().asJsonString());
+        } else {
+            writer.write(RestBean.failure(400, "退出登录失败").asJsonString());
+        }
     }
 }
 

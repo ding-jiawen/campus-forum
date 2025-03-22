@@ -4,3 +4,8 @@ spring:
       key: abcdefjhijk
       expire: 7
 
+  datasource:
+    username: root
+    password: 123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/study
