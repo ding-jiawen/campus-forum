@@ -13,6 +13,15 @@ public record RestBean<T>(int code, T data, String message) {
         return success(null);
     }
 
+    // 未验证
+    public static <T> RestBean<T> unauthorized(String message) {
+        return failure(401, message);
+    }
+
+    public static <T> RestBean<T> forbidden(String message) {
+        return failure(401, message);
+    }
+
     public static <T> RestBean<T> failure(int code, String message) {
         return new RestBean<>(401, null, message);
     }
