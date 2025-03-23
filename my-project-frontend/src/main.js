@@ -2,6 +2,10 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from "@/router";
+import axios from "axios";
+
+// 请求走后端服务器
+axios.defaults.baseURL = 'http://localhost:8080'
 
 
 const app = createApp(App)
