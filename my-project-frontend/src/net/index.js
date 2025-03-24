@@ -60,7 +60,15 @@ function storeAccessToken(token, remember, expire) {
     // 否则 存在会话中，关闭游览器就没了
     else
         sessionStorage.setItem(authItemName, str)
+}
 
+/**
+ * 获取请求头中的令牌
+ * @returns {{Authorization: string}}
+ */
+function accessHeader() {
+    const token = getAccessToken();
+    return token ? {'Authorization' : `Bearer ${getAccessToken()}`} : {}
 }
 
 /**
@@ -96,9 +104,24 @@ function internalGet(url, header, success, failure, error = defaultError) {
         if(data.code === 200) {
             success(data.data)
         } else {
-            failure(data.message, data.code. data.url)
+            failure(data.message, data.code, data.url)
         }
     }).catch(err => error()) // 捕获其他错误
+}
+
+/**
+ * 暴露给外部用的 get
+ */
+function get(url, success, failure = defaultFailure) {
+    internalGet(url, accessHeader(), success, failure)
+}
+
+/**
+ * 暴露给外部用的 post
+ */
+function post(url, data, success, failure = defaultFailure) {
+    internalPost(url, data, accessHeader(), success, failure)
+
 }
 
 function login(username, password, remember, success, failure = defaultFailure) {
@@ -114,4 +137,19 @@ function login(username, password, remember, success, failure = defaultFailure) 
     }, failure)
 }
 
-export {login}
+function logout(success, failure = defaultFailure) {
+    get('/api/auth/logout', () => {
+        deleteAccessToken()
+        ElMessage.success('退出登录成功，欢迎您再次使用')
+        success()
+    }, failure)
+}
+
+/**
+ * 是否未进行登录验证
+ */
+function unauthorized() {
+    return !getAccessToken()
+}
+
+export {login, logout, get, post, unauthorized}
