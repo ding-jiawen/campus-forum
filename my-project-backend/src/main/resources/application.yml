@@ -3,6 +3,8 @@ spring:
     jwt:
       key: abcdefjhijk
       expire: 7
+    filter:
+      order: -100
 
   datasource:
     username: root
