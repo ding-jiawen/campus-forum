@@ -77,7 +77,7 @@ function internalPost(url, data, header, success, failure, error = defaultError)
         if(data.code === 200) {
             success(data.data)
         } else {
-            failure(data.message, data.code. data.url)
+            failure(data.message, data.code, data.url)
         }
     }).catch(err => error()) // 捕获其他错误
 }
