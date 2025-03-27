@@ -1,7 +1,9 @@
 package com.example.service.impl;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.entity.dto.Account;
+import com.example.entity.vo.request.EmailRegisterVo;
 import com.example.mapper.AccountMapper;
 import com.example.service.AccountService;
 import com.example.utils.Const;
@@ -13,8 +15,10 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -31,6 +35,9 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
 
     @Resource
     FlowUtils flowUtils;
+
+    @Resource
+    PasswordEncoder passwordEncoder;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -67,6 +74,52 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
                     .set(Const.VERIFY_EMAIL_DATA + email, String.valueOf(code), 3, TimeUnit.MINUTES);
             return null;
         }
+    }
+
+    @Override
+    public String registerEmailAccount(EmailRegisterVo vo) {
+        // 注册：1.判断该邮箱是否被注册过；
+        // 2.判断用户名是否被占用
+        String email = vo.getEmail();
+        String key = Const.VERIFY_EMAIL_DATA + email;
+        String code = stringRedisTemplate.opsForValue().get(key);
+        String username = vo.getUsername();
+        if(code == null) {
+            return "请先获取验证码";
+        }
+        if(!code.equals(vo.getCode())) {
+            return "验证码错误，请重新输入";
+        }
+        if(this.existAccountByEmail(email)) {
+            return "该邮箱已被注册！";
+        }
+        if(this.existAccountByUsername(username)) {
+            return "该用户名已被占用";
+        }
+        String password = passwordEncoder.encode(vo.getPassword()); // 对密码进行加密
+        Account account = new Account(null, username, password, email, "user", new Date());
+        if(this.save(account)) {
+            // 使用过该验证码进行注册后，redis中没必要存了
+            stringRedisTemplate.delete(key);
+            return null;
+        }
+        else {
+            return "内部错误，请联系管理员";
+        }
+    }
+
+    /**
+     * 判断邮箱是否已被注册
+     */
+    private boolean existAccountByEmail(String email) {
+        return this.baseMapper.exists(Wrappers.<Account>query().eq("email", email));
+    }
+
+    /**
+     * 判断用户名是否被占用
+     */
+    private boolean existAccountByUsername(String username) {
+        return this.baseMapper.exists(Wrappers.<Account>query().eq("username", username));
     }
 
     /**
