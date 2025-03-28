@@ -8,6 +8,7 @@ import org.hibernate.validator.constraints.Length;
 @Data
 public class EmailRegisterVo {
     @Email
+    @Length(min = 4)
     String email;
     @Length(min = 6, max = 6)
     String code;
