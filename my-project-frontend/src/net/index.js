@@ -81,10 +81,7 @@ function accessHeader() {
  * @param error 出现错误的回调函数
  */
 function internalPost(url, data, header, success, failure, error = defaultError) {
-    console.log('调用InternalPost接收的data：' + data.code)
-    console.log('调用InternalPost接收的url：' + url)
     axios.post(url, data, {headers: header}).then(({data}) => {
-        console.log('调用axios.post时的验证码：' + data.code)
         if(data.code === 200) {
             success(data.data)
         } else {
@@ -122,8 +119,6 @@ function get(url, success, failure = defaultFailure) {
  * 暴露给外部用的 post
  */
 function post(url, data, success, failure = defaultFailure) {
-    console.log('post请求时获取的data：' + data)
-    console.log('post请求时获取的url：' + url)
     internalPost(url, data, accessHeader(), success, failure)
 
 }
